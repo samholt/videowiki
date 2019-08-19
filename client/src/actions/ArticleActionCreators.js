@@ -21,6 +21,7 @@ registerAction('SET_PLAYBACK_SPEED', ['playbackSpeed'])
 registerAction('UPLOAD_CONTENT_REQUEST')
 registerAction('UPLOAD_CONTENT_RECEIVE', ['uploadStatus'])
 registerAction('UPLOAD_CONTENT_FAILED')
+registerAction('CLEAR_CONVERSION_PROGRESS')
 
 registerAsyncAction(ArticleAPI, 'fetchArticle')
 registerAsyncAction(ArticleAPI, 'uploadContent')
@@ -32,7 +33,12 @@ registerAsyncAction(ArticleAPI, 'fetchContributors')
 registerAsyncAction(ArticleAPI, 'fetchArticleCount')
 registerAsyncAction(ArticleAPI, 'fetchAllArticles')
 registerAsyncAction(ArticleAPI, 'fetchDeltaArticles')
+
 registerAsyncAction(ArticleAPI, 'fetchImagesFromBing')
 registerAsyncAction(ArticleAPI, 'fetchGifsFromGiphy')
+registerAsyncAction(ArticleAPI, 'fetchAudioFileInfo')
+registerAsyncAction(ArticleAPI, 'fetchArticleVideo');
+registerAsyncAction(ArticleAPI, 'fetchArticleVideoByArticleVersion');
+registerAsyncAction(ArticleAPI, 'fetchVideoByArticleTitle');
 
 export default actions

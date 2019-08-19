@@ -1,14 +1,59 @@
 import React, { Component, PropTypes } from 'react'
-import { Link, withRouter } from 'react-router-dom'
-import { connect } from 'react-redux'
+import { Link, withRouter } from 'react-router-dom';
+import { connect } from 'react-redux';
+import { Popup, Icon, Dropdown } from 'semantic-ui-react';
 
-import WikiSearch from './WikiSearch'
-import Logo from './Logo'
-import AuthButtons from './AuthButtons'
-import UserProfileDropdown from './UserProfileDropdown'
+import WikiSearch from './WikiSearch';
+import Logo from './Logo';
+import AuthButtons from './AuthButtons';
+import UserProfileDropdown from './UserProfileDropdown';
 
-import actions from '../../actions/ArticleActionCreators'
-import authActions from '../../actions/AuthActionCreators'
+import actions from '../../actions/ArticleActionCreators';
+import authActions from '../../actions/AuthActionCreators';
+import uiActions from '../../actions/UIActionCreators';
+
+const LANG_OPTIONS = [
+  {
+    text: 'EN ( English )',
+    value: 'en',
+  },
+  {
+    text: 'HI ( हिंदी )',
+    value: 'hi',
+  },
+  // {
+  //   text: 'ES ( Español )',
+  //   value: 'es',
+  // },
+  // {
+  //   text: 'FR ( Français )',
+  //   value: 'fr',
+  // },
+];
+
+const styles = {
+  disclaimerContainer: {
+    textAlign: 'center',
+    margin: 0,
+    padding: 10,
+    backgroundColor: '#0099ff',
+  },
+  disclaimerTrigger: {
+    color: 'white',
+    fontWeight: 'bold',
+    textDecoration: 'underline',
+  },
+  disclaimerContent: {
+    textAlign: 'left',
+    fontSize: 16,
+  },
+  disclaimerClose: {
+    position: 'absolute',
+    right: 30,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+}
 
 class Header extends Component {
   _startPoller () {
@@ -39,18 +84,75 @@ class Header extends Component {
     this._stopPoller()
   }
 
-  _renderUser () {
-    const { session } = this.props
-    return session ? (
-      <UserProfileDropdown user={ session.user } />
-    ) : <AuthButtons />
+  onCloseDisclaimer() {
+    this.props.dispatch(uiActions.closeBetaDisclaimer());
   }
 
-  _renderLeaderboard () {
-    return this.props.session && this.props.session.user ? (
-      <Link className="c-app-header__link" to="/leaderboard">Leaderboard</Link>
-    ) : null
+  _renderBetaDisclaimer() {
+    if (!this.props.showBetaDisclaimer) return;
+
+    return (
+      <p style={styles.disclaimerContainer} >
+        <Popup
+          wide="very"
+          position="bottom center"
+          trigger={(
+            <a href="javascript:void(0)" style={styles.disclaimerTrigger} >Read the Beta Disclaimer</a>
+          )}
+          content={(
+            <div style={styles.disclaimerContent}>
+              <p>
+                <strong>VideoWiki</strong> is a proof of concept for a tool that allows you to collaboratively create and edit videos by dragging and dropping images and videos from Wikimedia Commons to relevant Wikipedia text.
+              </p>
+              <p>
+                VideoWiki is currently in Beta stage and despite our progress, we have only scratched the surface. We are actively working towards adding many more features and additional functionality. Anyone, including yourself, can edit a VideoWiki article even without logging in. Your user name (if you use one) or IP address will be associated with your edits.
+              </p>
+            </div>
+          )}
+        />
+        <a style={styles.disclaimerClose} onClick={this.onCloseDisclaimer.bind(this)} >
+          <Icon name="close" />
+        </a>
+      </p>
+    )
   }
+
+  onLanguageSelect(e, { value }) {
+    if (this.props.language !== value) {
+      this.props.dispatch(uiActions.setLanguage(value));
+      setTimeout(() => {
+        window.location.assign(window.location.origin)
+      }, 500);
+    }
+  }
+
+  _renderLanguages() {
+    return (
+      <Dropdown
+        inline
+        placeholder="Language"
+        className={'select-lang-dropdown'}
+        value={this.props.language}
+        options={LANG_OPTIONS}
+        onChange={this.onLanguageSelect.bind(this)}
+      />
+    )
+  }
+
+  _renderUser () {
+    const { session } = this.props
+    return session && session.user ? (
+      <UserProfileDropdown user={ session.user } />
+    ) : <AuthButtons style={{ maxWidth: '10rem', lineHeight: '20px', padding: '.5rem' }} />
+  }
+
+  // _renderLeaderboard () {
+  //   return this.props.session && this.props.session.user
+  //   ? null
+  //   : (
+  //     <Link className="c-app-header__link" to="/leaderboard">Leaderboard</Link>
+  //   )
+  // }
 
   _renderArticleCount () {
     const { fetchArticleCountState, articleCount } = this.props
@@ -71,13 +173,17 @@ class Header extends Component {
 
   render () {
     return (
-      <header className="c-app__header">
-        <Logo className="c-app__header__logo" match={this.props.match} />
-        <WikiSearch />
-        { this._renderAllArticle() }
-        { this._renderLeaderboard() }
-        { this._renderUser() }
-      </header>
+      <div>
+        {this._renderBetaDisclaimer()}
+        <header className="c-app__header">
+          <Logo className="c-app__header__logo" match={this.props.match} />
+          <WikiSearch />
+          { this._renderAllArticle() }
+          {/* { this._renderLeaderboard() } */}
+          {this._renderLanguages()}
+          { this._renderUser() }
+        </header>
+      </div>
     )
   }
 }
@@ -89,9 +195,11 @@ Header.propTypes = {
   fetchArticleCountState: PropTypes.string,
   articleCount: PropTypes.number,
   location: PropTypes.object.isRequired,
+  showBetaDisclaimer: PropTypes.bool.isRequired,
+  language: PropTypes.string.isRequired,
 }
 
 const mapStateToProps = (state) =>
-  Object.assign({}, state.article)
+  Object.assign({}, { ...state.article, showBetaDisclaimer: state.ui.showBetaDisclaimer, language: state.ui.language })
 
 export default withRouter(connect(mapStateToProps)(Header))

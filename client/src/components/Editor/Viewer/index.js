@@ -39,6 +39,8 @@ class Viewer extends Component {
   }
 
   showItem (item, isActive) {
+    if (!item) return;
+
     const { media } = item
     let component
 
@@ -48,6 +50,9 @@ class Viewer extends Component {
       if (isActive) {
         switch (format) {
           case 'mp4':
+          case 'ogg':
+          case 'ogv':
+          case 'webm':
             component = (
               <ReactPlayer
                 url={media}
@@ -85,6 +90,9 @@ class Viewer extends Component {
       } else {
         switch (format) {
           case 'mp4':
+          case 'ogg':
+          case 'ogv':
+          case 'webm':
             component = (
               <ReactPlayer
                 height='400px'
@@ -92,7 +100,7 @@ class Viewer extends Component {
                 url={media}
                 alt=""
                 volume={0}
-                playing={this.props.isPlaying}
+                playing={false}
               />
             )
             break
@@ -154,6 +162,7 @@ class Viewer extends Component {
       this.media = slides.slice(this.layoutStartSlide, this.layoutStartSlide + this.chosenLayout)
     }
 
+    // this.chosenLayout = 5;
     const current = currentSlideIndex - this.layoutStartSlide
 
     let layout
@@ -190,6 +199,7 @@ class Viewer extends Component {
           audio={audio}
           onSlidePlayComplete={onSlidePlayComplete}
           isPlaying={isPlaying}
+          showTextTransition={true}
           playbackSpeed={playbackSpeed}
         />
       </div>

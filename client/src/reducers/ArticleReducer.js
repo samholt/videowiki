@@ -18,17 +18,21 @@ const initialState = {
   fetchDeltaArticlesState: 'done',
   allArticles: [],
   deltaArticles: [],
-  fetchImagesFromBingState: 'done',
-  fetchGifsFromGiphyState: 'done',
-  searchImages: [],
-  searchGifs: [],
   uploadState: 'done',
   uploadStatus: null,
   uploadProgress: 0,
   playbackSpeed: 1,
+  fetchAudioFileInfoState: 'done',
+  audioInfo: {},
+  fetchArticleVideoState: 'done',
+  articleVideo: {
+    video: {},
+    exported: false,
+  },
+  articleLastVideo: null,
 }
 
-const handlers = {   
+const handlers = {
   [actions.FETCH_ARTICLE_REQUEST]: (state) =>
     mergeImmutable(state, {
       fetchArticleState: 'loading',
@@ -139,6 +143,15 @@ const handlers = {
       conversionPercentageState: 'failed',
     }),
 
+  [actions.CLEAR_CONVERSION_PROGRESS]: (state) =>
+    mergeImmutable(state, {
+      conversionPercentageState: 'loading',
+      conversionPercentage: {
+        progress: 0,
+        converted: false,
+        title: '',
+      },
+    }),
   // =============
   [actions.PUBLISH_ARTICLE_REQUEST]: (state) =>
     mergeImmutable(state, {
@@ -257,38 +270,83 @@ const handlers = {
       fetchDeltaArticlesState: 'failed',
       deltaArticles: [],
     }),
-
   // =============
-  [actions.FETCH_IMAGES_FROM_BING_REQUEST]: (state) =>
+  [actions.FETCH_AUDIO_FILE_INFO_REQUEST]: (state) =>
     mergeImmutable(state, {
-      fetchImagesFromBingState: 'loading',
+      fetchAudioFileInfoState: 'loading',
     }),
 
-  [actions.FETCH_IMAGES_FROM_BING_RECEIVE]: (state, action) =>
+  [actions.FETCH_AUDIO_FILE_INFO_RECEIVE]: (state, action) =>
     mergeImmutable(state, {
-      fetchImagesFromBingState: 'done',
-      searchImages: action.images,
+      fetchAudioFileInfoState: 'done',
+      audioInfo: action.audioInfo,
     }),
 
-  [actions.FETCH_IMAGES_FROM_BING_FAILED]: (state) =>
+  [actions.FETCH_AUDIO_FILE_INFO_FAILED]: (state) =>
     mergeImmutable(state, {
-      fetchImagesFromBingState: 'failed',
+      fetchAudioFileInfoState: 'failed',
     }),
-    // =============
-  [actions.FETCH_GIFS_FROM_GIPH_REQUEST]: (state) =>
+  // fetchArticleVideo
+  [actions.FETCH_ARTICLE_VIDEO_REQUEST]: (state) =>
     mergeImmutable(state, {
-      fetchGifsFromGiphyState: 'loading',
+      fetchArticleVideoState: 'loading',
+      articleVideo: {
+        video: {},
+        exported: false,
+      },
     }),
-
-  [actions.FETCH_GIFS_FROM_GIPHY_RECEIVE]: (state, action) =>
+  [actions.FETCH_ARTICLE_VIDEO_RECEIVE]: (state, action) =>
     mergeImmutable(state, {
-      fetchGifsFromGiphyState: 'done',
-      searchGifs: action.gifs,
+      fetchArticleVideoState: 'done',
+      articleVideo: {
+        video: action.video,
+        exported: action.exported,
+      },
     }),
-
-  [actions.FETCH_GIFS_FROM_GIPH_FAILED]: (state) =>
+  [actions.FETCH_ARTICLE_VIDEO_FAILED]: (state) =>
     mergeImmutable(state, {
-      fetchGifsFromGiphyState: 'failed',
+      fetchArticleVideoState: 'failed',
+      articleVideo: {
+        video: {},
+        exported: false,
+      },
+    }),
+  // fetchArticleVideoByArticleVersion
+  [actions.FETCH_ARTICLE_VIDEO_BY_ARTICLE_VERSION_REQUEST]: (state) =>
+  mergeImmutable(state, {
+    fetchArticleVideoState: 'loading',
+    articleVideo: {
+      video: {},
+      exported: false,
+    },
+  }),
+  [actions.FETCH_ARTICLE_VIDEO_BY_ARTICLE_VERSION_RECEIVE]: (state, action) =>
+  mergeImmutable(state, {
+    fetchArticleVideoState: 'done',
+    articleVideo: {
+      video: action.video,
+      exported: action.exported,
+    },
+  }),
+  [actions.FETCH_ARTICLE_VIDEO_BY_ARTICLE_VERSION_FAILED]: (state) =>
+  mergeImmutable(state, {
+    fetchArticleVideoState: 'failed',
+    articleVideo: {
+      video: {},
+      exported: false,
+    },
+  }),
+  [actions.FETCH_VIDEO_BY_ARTICLE_TITLE_REQUEST]: (state) =>
+  mergeImmutable(state, {
+    articleLastVideo: null,
+  }),
+  [actions.FETCH_VIDEO_BY_ARTICLE_TITLE_RECEIVE]: (state, action) =>
+      mergeImmutable(state, {
+        articleLastVideo: action.video,
+      }),
+  [actions.FETCH_VIDEO_BY_ARTICLE_TITLE_FAILED]: (state) =>
+    mergeImmutable(state, {
+      articleLastVideo: null,
     }),
 }
 

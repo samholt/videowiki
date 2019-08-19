@@ -2,6 +2,7 @@ import React, { Component, PropTypes } from 'react'
 import { connect } from 'react-redux'
 import { Progress, Button } from 'semantic-ui-react'
 import { withRouter } from 'react-router-dom'
+import queryString from 'query-string';
 
 import StateRenderer from '../common/StateRenderer'
 
@@ -12,45 +13,56 @@ class WikiProgress extends Component {
   componentWillMount () {
     const { match, dispatch } = this.props
     const title = match.params.title
+    const { wikiSource } = queryString.parse(location.search);
 
-    dispatch(actions.convertWiki({ title }))
-    dispatch(articleActions.fetchConversionProgress({ title }))
-    this._startPoller()
+    // dispatch(actions.convertWiki({ title, wikiSource }))
+    dispatch(articleActions.fetchConversionProgress({ title, wikiSource }))
+    if (!this._sessionPoller) {
+      this._startPoller()
+    }
   }
 
   componentWillReceiveProps (nextProps) {
-    if (nextProps.conversionPercentage.converted === true) {
+    if (nextProps.conversionPercentage.converted === true && nextProps.conversionPercentage.progress === 100) {
       this._stopPoller()
-      this._navigateToArticle()
+      setTimeout(() => {
+        this._navigateToArticle()
+      }, 100);
     }
   }
 
   componentWillUnmount () {
-    this._stopPoller()
+    this._stopPoller();
+    this.props.dispatch(articleActions.clearConversionProgress());
   }
 
   _startPoller () {
     const { match, dispatch } = this.props
     const title = match.params.title
+    const { wikiSource } = queryString.parse(location.search);
 
     this._sessionPoller = setInterval(() => {
-      dispatch(articleActions.fetchConversionProgress({ title }))
+      dispatch(articleActions.fetchConversionProgress({ title, wikiSource }))
+      if (this.props.conversionPercentage.converted && this.props.conversionPercentage.progress === 100) {
+        this._stopPoller();
+      }
     }, 10000)
   }
 
   _stopPoller () {
-    clearInterval(this._sessionPoller)
-    this._sessionPoller = null
+    if (this._sessionPoller) {
+      clearInterval(this._sessionPoller)
+      this._sessionPoller = null
+    }
   }
 
   _navigateToArticle () {
     setTimeout(() => {
       if (this.props.conversionPercentage.converted) {
-        this.props.history.push(`/videowiki/${this.props.conversionPercentage.title}`)
-      } else {
-        this._startPoller()
+        const { wikiSource } = queryString.parse(location.search);
+        this.props.history.push(`/${this.props.language}/videowiki/${this.props.conversionPercentage.title}?wikiSource=${wikiSource}`)
       }
-    }, 2000)
+    }, 1000)
   }
 
   _render () {
@@ -69,7 +81,7 @@ class WikiProgress extends Component {
 
         <div>
           <strong>Quick Fact: </strong>
-          It takes 4-5 minutes to convert an article. So get some <img src="/img/coffee.png" className="c-app-coffee" /> until then.
+          It takes 4-5 minutes to convert an article. So get some <img className="c-app-coffee" src="https://s3.eu-central-1.amazonaws.com/vwpmedia/statics/coffee.png" /> until then.
         </div>
       </div>
     )
@@ -81,7 +93,7 @@ class WikiProgress extends Component {
 }
 
 const mapStateToProps = (state) =>
-  Object.assign({}, state.wikiProgress, state.article)
+  Object.assign({ language: state.ui.language }, state.wikiProgress, state.article)
 
 export default withRouter(connect(mapStateToProps)(WikiProgress))
 
@@ -93,4 +105,5 @@ WikiProgress.propTypes = {
   history: React.PropTypes.shape({
     push: React.PropTypes.func.isRequired,
   }).isRequired,
+  language: React.PropTypes.string.isRequired,
 }

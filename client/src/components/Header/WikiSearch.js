@@ -5,6 +5,7 @@ import { Search } from 'semantic-ui-react'
 import { withRouter } from 'react-router'
 
 import actions from '../../actions/WikiActionCreators'
+import { getLanguageFromWikisource } from '../../utils/wikiUtils';
 
 class WikiSearch extends Component {
   constructor (props) {
@@ -23,22 +24,40 @@ class WikiSearch extends Component {
   }
 
   _handleResultSelect (e, result) {
-    let { title } = result
+    let { title } = result;
+    const { description } = result;
 
-    title = title.split(' ').join('_')
-    this.props.history.push(`/wiki/${title}`)
+    title = title.split(' ').join('_');
+    this.props.history.push(`/${getLanguageFromWikisource(description)}/videowiki/${title}?wikiSource=${description}`)
   }
 
   _handleSearchChange (e, value) {
     if (this.state.searchText !== value) {
       this.setState({ searchText: value })
       _.debounce(() => {
-        const { searchText } = this.state
+        let { searchText } = this.state
         if (searchText.length < 1) {
           return this._resetSearchBar()
         }
 
-        this.props.dispatch(actions.searchWiki({ searchText }))
+        const urlRegex = /^(https:\/\/.+)\/wiki\/(.*)$/;
+        const urlMatch = decodeURI(searchText).match(urlRegex);
+        let wikiSource ;
+
+        if (urlMatch && urlMatch.length == 3 ) {
+          wikiSource = urlMatch[1];
+          searchText = urlMatch[2];
+        }
+
+        let action = {
+          searchText
+        }
+
+        if (wikiSource) {
+          action['wikiSource'] = wikiSource;
+        }
+
+        this.props.dispatch(actions.searchWiki(action))
       }, 500)()
     }
   }
@@ -48,7 +67,7 @@ class WikiSearch extends Component {
     const { searchResults, isSearchResultLoading } = this.props
 
     return (
-      <div>
+      <div style={{ flex: 10 }}>
         <Search
           className="c-search-bar"
           loading={isSearchResultLoading}
@@ -56,6 +75,7 @@ class WikiSearch extends Component {
           onSearchChange={this._handleSearchChange}
           results={searchResults}
           value={searchText}
+          placeholder='Search a Topic or Paste a URL'
           fluid
         />
       </div>
@@ -68,8 +88,9 @@ WikiSearch.propTypes = {
   searchResults: PropTypes.array,
   isSearchResultLoading: PropTypes.bool,
   history: PropTypes.object.isRequired,
+  language: PropTypes.string.isRequired,
 }
 
 const mapStateToProps = (state) =>
-  Object.assign({}, state.wiki)
+  Object.assign({}, { ...state.wiki, language: state.ui.language })
 export default withRouter(connect(mapStateToProps)(WikiSearch))

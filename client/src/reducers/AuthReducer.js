@@ -1,5 +1,6 @@
 import { mergeImmutable } from '../utils'
 import actions from '../actions/AuthActionCreators'
+import websockets from '../websockets';
 
 const initialState = {
   signupState: null,
@@ -9,6 +10,7 @@ const initialState = {
   loginStatus: null,
   loginError: null,
   session: null,
+  token: '',
   logoutState: 'loading',
   resetState: null,
   verifyResetTokenState: 'loading',
@@ -19,19 +21,33 @@ const initialState = {
 
 const handlers = {
   // ===========
-  [actions.VALIDATE_SESSION_REQUEST]: (state) =>
-    mergeImmutable(state, {
-      session: null,
-    }),
+  // [actions.VALIDATE_SESSION_REQUEST]: (state) =>
+  //   mergeImmutable(state, {
+  //     session: null,
+  //   }),
 
-  [actions.VALIDATE_SESSION_RECEIVE]: (state, action) =>
-    mergeImmutable(state, {
-      session: action.session,
-    }),
-
+  [actions.VALIDATE_SESSION_RECEIVE]: (state, action) => {
+    const update = {
+      session: action.session || {},
+    }
+    if (action.session && action.session.token) {
+      update['token'] = action.session.token;
+      websockets.emitEvent(websockets.websocketsEvents.AUTHENTICATE, { token: action.session.token });
+    } else {
+      update['token'] = null;
+    }
+    if (!action.session || !action.session.user) {
+      update.session.user = null;
+    }
+    if (!action.session || !action.session.token) {
+      update.session.token = null;
+    }
+    return mergeImmutable(state, update);
+  },
   [actions.VALIDATE_SESSION_FAILED]: (state) =>
     mergeImmutable(state, {
       session: null,
+      token: '',
     }),
 
   // ===========
@@ -160,6 +176,17 @@ const handlers = {
   [actions.UPDATE_PASSWORD_FAILED]: (state) =>
     mergeImmutable(state, {
       updatePasswordState: 'failed',
+    }),
+  [actions.SET_TOKEN]: (state, action) =>
+    mergeImmutable(state, {
+      token: action.token,
+    }),
+  [actions.SET_USER]: (state, action) =>
+    mergeImmutable(state, {
+      session: {
+        user: action.user,
+        token: action.user && state.token ? state.token : '',
+      },
     }),
 }
 

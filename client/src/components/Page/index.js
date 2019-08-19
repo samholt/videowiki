@@ -1,13 +1,14 @@
 import React, { Component, PropTypes } from 'react'
 import { Redirect } from 'react-router-dom'
 import { connect } from 'react-redux'
+import queryString from 'query-string';
 import { Button, Modal, Icon } from 'semantic-ui-react'
 import StateRenderer from '../common/StateRenderer'
 
 import actions from '../../actions/WikiActionCreators'
 
 class Page extends Component {
-  constructor (props) {
+  constructor(props) {
     super(props)
 
     this.state = {
@@ -18,20 +19,30 @@ class Page extends Component {
     this.handleClose = this.handleClose.bind(this)
   }
 
-  componentWillMount () {
+  componentWillMount() {
     const { dispatch, match } = this.props
-    dispatch(actions.fetchWikiPage({ title: match.params.title }))
+    const { wikiSource } = queryString.parse(location.search);
+
+    dispatch(actions.fetchWikiPage({ title: match.params.title, wikiSource }))
   }
 
-  componentWillReceiveProps (nextProps) {
+  componentWillReceiveProps(nextProps) {
+    const { wikiSource } = queryString.parse(location.search);
+    const { language } = this.props;
+
     if (this.props.wikiContentState === 'loading' && nextProps.wikiContentState === 'done') {
       this.setState({
         shouldRender: true,
       })
     }
 
-    if (this.props.match.url !== nextProps.match.url) {
-      nextProps.dispatch(actions.fetchWikiPage({ title: nextProps.match.params.title }))
+    if (this.props.match.url !== nextProps.match.url || this.props.location.search !== nextProps.location.search) {
+      const { wikiSource } = queryString.parse(location.search);
+      nextProps.dispatch(actions.fetchWikiPage({ title: nextProps.match.params.title, wikiSource }))
+    }
+
+    if (wikiSource == '' && nextProps.wikiSource !== '' && nextProps.wikiSource) {
+      this.props.history.push(`/${language}/wiki/${nextProps.match.params.title}?wikiSource=${nextProps.wikiSource}`)
     }
 
     if (this.props.convertState === 'loading' && nextProps.convertState === 'failed') {
@@ -39,19 +50,18 @@ class Page extends Component {
         shouldShowError: true,
       })
     }
-
     if (this.props.convertState === 'loading' && nextProps.convertState === 'done') {
-      this.props.history.push(`/wiki/convert/${nextProps.match.params.title}`)
+      this.props.history.push(`/${language}/wiki/convert/${nextProps.match.params.title}?wikiSource=${wikiSource}`)
     }
   }
 
-  handleClose () {
+  handleClose() {
     this.setState({
       shouldShowError: false,
     })
   }
 
-  _renderError () {
+  _renderError() {
     const { convertError } = this.props
     return this.state.shouldShowError && convertError && convertError.response ? (
       <Modal
@@ -61,7 +71,7 @@ class Page extends Component {
         size="small"
       >
         <Modal.Content>
-          <h3 className="c-editor-error-modal">{ convertError.response.text }</h3>
+          <h3 className="c-editor-error-modal">{convertError.response.text}</h3>
         </Modal.Content>
         <Modal.Actions>
           <Button color='green' onClick={this.handleClose} inverted>
@@ -72,13 +82,14 @@ class Page extends Component {
     ) : null
   }
 
-  _handleConvertToVideoWiki () {
+  _handleConvertToVideoWiki() {
     const { match, dispatch } = this.props
+    const { wikiSource } = queryString.parse(location.search);
     const title = match.params.title
-    dispatch(actions.convertWiki({ title }))
+    dispatch(actions.convertWiki({ title, wikiSource }))
   }
 
-  _renderConvertToVideoWikiButton () {
+  _renderConvertToVideoWikiButton() {
     return (
       <Button
         primary
@@ -90,28 +101,28 @@ class Page extends Component {
     )
   }
 
-  _render () {
+  _render() {
     const { wikiContent } = this.props
 
     try {
       const parsedContent = JSON.parse(wikiContent)
       if (parsedContent.redirect && this.state.shouldRender) {
         return (
-          <Redirect to={ parsedContent.path } />
+          <Redirect to={parsedContent.path} />
         )
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return (
       <div>
-        { this._renderConvertToVideoWikiButton() }
+        {this._renderConvertToVideoWikiButton()}
         <div dangerouslySetInnerHTML={{ __html: wikiContent }} />
-        { this._renderError() }
+        {this._renderError()}
       </div>
     )
   }
 
-  render () {
+  render() {
     const { wikiContentState } = this.props
     return (
       <StateRenderer
@@ -125,8 +136,7 @@ class Page extends Component {
   }
 }
 
-const mapStateToProps = (state) =>
-  Object.assign({}, state.wiki)
+const mapStateToProps = (state) => ({ ...state.wiki, language: state.ui.language })
 
 export default connect(mapStateToProps)(Page)
 
@@ -138,4 +148,5 @@ Page.propTypes = {
   history: PropTypes.object.isRequired,
   convertState: PropTypes.string,
   convertError: PropTypes.object,
+  language: PropTypes.string.isRequired,
 }

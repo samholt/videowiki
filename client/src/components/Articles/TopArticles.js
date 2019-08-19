@@ -16,34 +16,41 @@ class TopArticles extends Component {
   }
 
   _renderArticles (titles) {
-     const { topArticles } = this.props;
-
-      return topArticles.map((article) => {
-      const { image, title, _id } = article
-      const url = `/videowiki/${title}`
-      if(!titles.some(title => title === article.title)) {
-        return false;
-      }
-      return (
-        <Grid.Column width={3} key={ _id }>
-          <ArticleCard
-            url={ url }
-            image={ image }
-            title={ title }
-          />
-        </Grid.Column>
-      )
+    const { topArticles, language } = this.props;
+    if (!topArticles) return null;
+    const titlesStrings = titles.map((t) => t.title)
+    return topArticles.sort((a, b) => titlesStrings.indexOf(a.title) - titlesStrings.indexOf(b.title))
+      .map((article) => {
+        const { image, title, _id, wikiSource, ns } = article
+        const url = `/${language}/videowiki/${title}?wikiSource=${wikiSource}`;
+        const titleItem = titles.find((title) => title.title === article.title);
+        if (!titles.some((title) => title.title === article.title)) {
+          return false;
+        }
+        return (
+          <Grid.Column computer={3} tablet={5} mobile={16} key={ _id }>
+            <ArticleCard
+              url={ url }
+              image={ (titleItem && titleItem.image) || image }
+              title={ (titleItem && titleItem.renderedTitle) || title }
+              ns={ ns || 0 }
+            />
+          </Grid.Column>
+        )
       })
   }
 
   _render () {
+    const langCategories = categories[this.props.language];
+    if (!langCategories) return null;
+
     return (
-      <div className="c-app-card-layout">
+      <div className="c-app-card-layout home">
         <Grid>
-         { categories.map((item,index) =>         
-          <Grid.Row key={index}>
-          <h2 className="section-title">{item.category}</h2>{this._renderArticles(item.title)}
-          </Grid.Row>
+          {langCategories.map((item, index) =>
+            <Grid.Row key={index}>
+              <h2 className="section-title">{item.category}</h2>{this._renderArticles(item.titles)}
+            </Grid.Row>,
           )}
         </Grid>
       </div>
@@ -69,9 +76,10 @@ TopArticles.propTypes = {
   dispatch: PropTypes.func.isRequired,
   topArticlesState: PropTypes.string.isRequired,
   topArticles: PropTypes.array.isRequired,
+  language: PropTypes.string.isRequired,
 }
 
 const mapStateToProps = (state) =>
-  Object.assign({}, state.article)
+  Object.assign({}, { ...state.article, language: state.ui.language })
 
 export default connect(mapStateToProps)(TopArticles)

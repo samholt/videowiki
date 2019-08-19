@@ -1,9 +1,14 @@
 import { httpGet, httpPost, makeCallback } from './Common'
-import request from 'superagent'
+import request from '../utils/requestAgent'
 
-function fetchArticle ({ title, mode }) {
+function fetchArticle ({ title, mode, wikiSource }) {
   const edit = mode !== 'viewer'
-  const url = `/api/wiki/article?title=${encodeURIComponent(title)}&edit=${edit}`
+  let url = `/api/wiki/article?title=${encodeURIComponent(title)}&edit=${edit}`
+
+  if (wikiSource) {
+    url += `&wikiSource=${wikiSource}`;
+  }
+
   return httpGet(url).then(
     ({ text }) => ({
       article: JSON.parse(text),
@@ -16,7 +21,7 @@ function fetchTopArticles () {
   return httpGet(url)
     .then(
       ({ text }) => (JSON.parse(text)),
-    )
+  )
     .catch((reason) => { throw { error: 'FAILED', reason } })
 }
 
@@ -24,17 +29,17 @@ const makeFileUploadMethod = (method) =>
   (url, title, slideNumber, file, headers = {}) =>
     new Promise((resolve, reject) => {
       method(url)
-      .set(headers)
-      .field('title', title)
-      .field('slideNumber', slideNumber)
-      .attach('file', file)
-      .on('progress', (event) => {
-        const uploadStatus = event
-        return {
-          uploadStatus,
-        }
-      })
-      .end(makeCallback(resolve, reject))
+        .set(headers)
+        .field('title', title)
+        .field('slideNumber', slideNumber)
+        .attach('file', file)
+        .on('progress', (event) => {
+          const uploadStatus = event
+          return {
+            uploadStatus,
+          }
+        })
+        .end(makeCallback(resolve, reject))
     })
 
 function uploadContent ({ title, slideNumber, file }) {
@@ -47,13 +52,15 @@ function uploadContent ({ title, slideNumber, file }) {
   )
 }
 
-function uploadImageUrl ({ title, slideNumber, url }) {
+function uploadImageUrl ({ title, wikiSource, slideNumber, url, mimetype }) {
   const uploadUrl = '/api/wiki/article/imageUpload'
 
   const data = {
     title,
+    wikiSource,
     slideNumber,
     url,
+    mimetype,
   }
 
   return httpPost(uploadUrl, data).then(
@@ -63,23 +70,27 @@ function uploadImageUrl ({ title, slideNumber, url }) {
   ).catch((reason) => { throw { error: 'FAILED', reason } })
 }
 
-function fetchConversionProgress ({ title }) {
-  const url = `/api/articles/progress?title=${title}`
+function fetchConversionProgress ({ title, wikiSource }) {
+  const url = `/api/articles/progress?title=${title}&wikiSource=${wikiSource}`
 
   return httpGet(url)
     .then(
       ({ text }) => (JSON.parse(text)),
-    )
+  )
     .catch((reason) => { throw { error: 'FAILED', reason } })
 }
 
-function publishArticle ({ title }) {
-  const url = `/api/articles/publish?title=${title}`
+function publishArticle ({ title, wikiSource }) {
+  let url = `/api/articles/publish?title=${title}`
+
+  if (wikiSource) {
+    url += `&wikiSource=${wikiSource}`
+  }
 
   return httpGet(url)
     .then(
       ({ text }) => (text),
-    )
+  )
     .catch((reason) => { throw { error: 'FAILED', reason } })
 }
 
@@ -143,6 +154,50 @@ function fetchGifsFromGiphy ({ searchText }) {
   ).catch((reason) => { throw { error: 'FAILED', reason } })
 }
 
+function fetchAudioFileInfo ({ file }) {
+  const url = `/api/articles/audios?filename=${file}`
+
+  return httpGet(url).then(
+    ({ body }) => ({
+      audioInfo: body.file,
+    }),
+  ).catch((reason) => { throw { error: 'FAILED', reason } })
+}
+
+function fetchArticleVideo({ articleId, lang }) {
+  const url = `/api/videos/by_article_id/${articleId}?lang=${lang}`;
+
+  return httpGet(url).then(
+    ({ body }) => ({
+      exported: body.exported,
+      video: body.video,
+    })
+    ,
+  ).catch((reason) => { throw { error: 'FAILED', reason } })
+}
+
+function fetchArticleVideoByArticleVersion({ version, title, wikiSource, lang }) {
+  const url = `/api/videos/by_article_version/${version}?title=${title}&wikiSource=${wikiSource}&lang=${lang}`;
+
+  return httpGet(url)
+  .then(({ body }) => ({
+    exported: body.exported,
+    video: body.video,
+  })).catch((reason) => { throw { error: 'FAILED', reason } })
+}
+
+function fetchVideoByArticleTitle({ title, wikiSource, lang }) {
+  let url = `/api/videos/by_article_title?title=${encodeURIComponent(title)}&wikiSource=${wikiSource}`;
+  if (lang) {
+    url += `&lang=${lang}`;
+  }
+
+  return httpGet(url)
+  .then(({ body }) => ({
+    video: body.video,
+  })).catch((reason) => { throw { error: 'FAILED', reason } });
+}
+
 export default {
   fetchArticle,
   uploadContent,
@@ -156,4 +211,8 @@ export default {
   fetchImagesFromBing,
   fetchGifsFromGiphy,
   fetchDeltaArticles,
+  fetchAudioFileInfo,
+  fetchArticleVideo,
+  fetchArticleVideoByArticleVersion,
+  fetchVideoByArticleTitle,
 }

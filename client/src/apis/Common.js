@@ -1,5 +1,4 @@
-import request from 'superagent'
-
+import request from '../utils/requestAgent';
 const DELAY = 3000
 
 export const cacheRequest = (method) =>
@@ -49,7 +48,7 @@ const makePayloadMethod = (method) =>
     })
 
 export const httpGet = makeSimpleMethod(request['get'])
-export const httpDelete = makeSimpleMethod(request['del'])
+export const httpDelete = makePayloadMethod(request['del'])
 
 export const httpPut = makePayloadMethod(request['put'])
 export const httpPost = makePayloadMethod(request['post'])

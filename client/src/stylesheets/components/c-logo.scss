@@ -1,5 +1,7 @@
 .c-logo-wrapper {
-  width: 16em;
+  // width: 16em;
+  flex: 4;
+  padding-right: 20px;
   color: black !important;
 }
 
@@ -29,17 +31,30 @@ span.c-logo__beta {
     color: red;
 }
 .joinUsLogo{
-    height:5em;
-    background:#0099ff;
-    border-radius:5px;
-  p{
-    padding:0.75em 0;
+  background:#0099ff;
+  border-radius:5px;
+  padding:0.75em 0;
+  color:white;
+  font-size:28px;
+  div.links-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+  a {
+    padding: 1rem;
+  }
+  a.supportvidewiki i {
+   transition: color .2s;
+   color: red;
+  }
+  a.learnmore{
     color:white;
-    font-size:28px;
+    text-decoration: underline;
   }
   a{
-    text-decoration: underline;
-    color:white;
+    font-size: 20px;
   }
 }
 #logoText{
